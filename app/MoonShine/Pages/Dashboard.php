@@ -6,47 +6,54 @@ namespace App\MoonShine\Pages;
 
 use App\Models\TodoItem;
 use Illuminate\Support\Collection;
-use Illuminate\View\ComponentAttributeBag;
-use MoonShine\ActionButtons\ActionButton;
-use MoonShine\Components\FormBuilder;
-use MoonShine\Components\Icon;
-use MoonShine\Components\TableBuilder;
-use MoonShine\Enums\JsEvent;
-use MoonShine\Enums\ToastType;
-use MoonShine\Fields\DateRange;
-use MoonShine\Fields\ID;
-use MoonShine\Fields\Position;
-use MoonShine\Fields\Preview;
-use MoonShine\Fields\StackFields;
-use MoonShine\Fields\Text;
-use MoonShine\Fields\Textarea;
-use MoonShine\Http\Responses\MoonShineJsonResponse;
-use MoonShine\MoonShineRequest;
-use MoonShine\Pages\Page;
+use MoonShine\Contracts\Core\TypeCasts\DataWrapperContract;
+use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
+use MoonShine\Laravel\MoonShineRequest;
+use MoonShine\Laravel\Pages\Page;
+use MoonShine\Contracts\UI\ComponentContract;
+use MoonShine\Laravel\TypeCasts\ModelCaster;
 use MoonShine\Support\AlpineJs;
-use MoonShine\TypeCasts\ModelCast;
+use MoonShine\Support\Enums\JsEvent;
+use MoonShine\Support\Enums\ToastType;
+use MoonShine\UI\Components\ActionButton;
+use MoonShine\UI\Components\FormBuilder;
+use MoonShine\UI\Components\Icon;
+use MoonShine\UI\Components\Table\TableBuilder;
+use MoonShine\UI\Fields\DateRange;
+use MoonShine\UI\Fields\ID;
+use MoonShine\UI\Fields\Position;
+use MoonShine\UI\Fields\Preview;
+use MoonShine\UI\Fields\StackFields;
+use MoonShine\UI\Fields\Text;
+use MoonShine\UI\Fields\Textarea;
 use Throwable;
 
 class Dashboard extends Page
 {
-    public function breadcrumbs(): array
+    /**
+     * @return array<string, string>
+     */
+    public function getBreadcrumbs(): array
     {
         return [
-            '#' => $this->title(),
+            '#' => $this->getTitle()
         ];
     }
 
-    public function title(): string
+    public function getTitle(): string
     {
-        return 'My TODO-list';
+        return $this->title ?: 'Dashboard';
     }
 
-    public function components(): array
-    {
-        return [
+    /**
+     * @return list<ComponentContract>
+     */
+    protected function components(): iterable
+	{
+		return [
             ActionButton::make('New task')
                 ->primary()
-                ->icon('heroicons.outline.plus')
+                ->icon('plus')
                 ->inModal('New task', fn () => $this->formComponent())
             ,
 
@@ -55,33 +62,35 @@ class Dashboard extends Page
                     'data-handle' => '.handle',
                 ])
                 ->tdAttributes(
-                    fn (mixed $data, int $row, int $cell, ComponentAttributeBag $attr) => $attr->when(
-                        $cell === 0,
-                        fn (ComponentAttributeBag $a) => $a->merge(['class' => 'handle', 'style' => 'cursor: move'])
-                    )
+                    fn (?DataWrapperContract $data, int $row, int $cell, TableBuilder $ctx): array =>
+                    $cell === 0 ? ['class' => 'handle', 'style' => 'cursor: move'] : []
                 )
                 ->name('todo-list')
                 ->items($this->items())
-                ->cast(ModelCast::make(TodoItem::class))
+                ->cast(new ModelCaster(TodoItem::class))
                 ->async()
-                ->sortable($this->asyncMethodUrl('reorder'))
+                ->reorderable($this->getRouter()->getEndpoints()->method('reorder'))
                 ->reindex()
                 ->withNotFound()
                 ->buttons([
                     ActionButton::make('')
                         ->secondary()
-                        ->icon('heroicons.outline.pencil')
-                        ->inModal('Update task', fn (TodoItem $todoItem) => $this->formComponent($todoItem))
+                        ->icon('pencil')
+                        ->inModal(
+                            title: 'Update task',
+                            content: fn (TodoItem $todoItem) => $this->formComponent($todoItem),
+                            name: fn(TodoItem $todoItem) => "task-edit-{$todoItem->getKey()}"
+                        )
                     ,
 
                     ActionButton::make('')
-                        ->icon('heroicons.outline.check')
+                        ->icon('check')
                         ->success()
                         ->method('done', events: $this->updateListingEvents()),
                 ])
             ,
         ];
-    }
+	}
 
     private function items(): Collection
     {
@@ -94,7 +103,7 @@ class Dashboard extends Page
     {
         return [
             Preview::make(
-                formatted: static fn () => Icon::make('heroicons.outline.bars-4')
+                formatted: static fn () => Icon::make('bars-4')
             ),
 
             Position::make(),
@@ -131,7 +140,7 @@ class Dashboard extends Page
                 events: $this->updateListingEvents()
             )
             ->fields($this->formFields())
-            ->fillCast($todoItem, ModelCast::make(TodoItem::class))
+            ->fillCast($todoItem, new ModelCaster(TodoItem::class))
             ->submit('Save', ['class' => 'btn-primary btn-lg']);
     }
 

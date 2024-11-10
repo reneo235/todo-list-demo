@@ -6,10 +6,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "dev-lnk/moonshine-builder": "^0.2.1",
         "laravel/framework": "^11.0",
-        "laravel/tinker": "^2.9",
-        "moonshine/moonshine": "^2.11"
+        "moonshine/moonshine": "3.*.*-dev"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -63,6 +61,18 @@
             "php-http/discovery": true
         }
     },
+    "repositories": [
+        {
+            "type": "github",
+            "url": "https://github.com/moonshine-software/moonshine",
+            "options": {
+                "versions": {
+                    "moonshine/moonshine": "3.*.*-dev"
+                },
+                "symlink": true
+            }
+        }
+    ],
     "minimum-stability": "stable",
     "prefer-stable": true
 }

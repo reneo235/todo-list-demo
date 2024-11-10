@@ -1,6 +1,6 @@
 ## MoonShine TODO-list project
 
-![logo](https://github.com/moonshine-software/todo-list-demo/raw/master/art/screenshot.png)
+![logo](https://github.com/moonshine-software/todo-list-demo/raw/3.0/art/screenshot.png)
 
 ## Installation
 
